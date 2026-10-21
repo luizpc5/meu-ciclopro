@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CicloPro — Painel de Estudos</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  (function() {
+    try {
+      const savedTheme = localStorage.getItem("ciclopro_theme");
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const theme = savedTheme || (prefersDark ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {}
+  })();
+</script>
+<style>
+:root {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --card-alt: #f9fbff;
+  --card-active: #f5f8ff;
+  --text: #182033;
+  --muted: #687386;
+  --border: #e4e8f0;
+  --border-active: #8db3ff;
+  --primary: #1769ff;
+  --navy: #182764;
+  --red: #df4c5d;
+  --green: #18a875;
+  --gold: #f59e0b;
+  --input-bg: #ffffff;
+  --donut-empty: #edf2fa;
+  --shadow: 0 6px 22px #1a2b5209;
+  --btn-soft-bg: #edf3ff;
+  --btn-soft-text: #145bd6;
+  --btn-red-bg: #fff0f1;
+  --btn-red-text: #c53548;
+  --btn-warn-bg: #fff7df;
+  --btn-warn-text: #8a5a00;
+  --notice-bg: #fff9e9;
+  --notice-border: #f3dda4;
+  --notice-text: #765b10;
+}
+
+[data-theme="dark"] {
+  --bg: #0b0f19;
+  --card: #131b2e;
+  --card-alt: #182238;
+  --card-active: #1c2b4b;
+  --text: #e6edf7;
+  --muted: #8b9bb4;
+  --border: #23304c;
+  --border-active: #3b82f6;
+  --primary: #3b82f6;
+  --navy: #60a5fa;
+  --red: #f87171;
+  --green: #34d399;
+  --gold: #fbbf24;
+  --input-bg: #0f1626;
+  --donut-empty: #1e293b;
+  --shadow: 0 6px 22px #00000040;
+  --btn-soft-bg: #1e293b;
+  --btn-soft-text: #60a5fa;
+  --btn-red-bg: #2d161e;
+  --btn-red-text: #f87171;
+  --btn-warn-bg: #2b2312;
+  --btn-warn-text: #fbbf24;
+  --notice-bg: #231d10;
+  --notice-border: #4d3d18;
+  --notice-text: #fcd34d;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+input { background: var(--input-bg); color: var(--text); }
+
+.top {
+  height: 70px;
+  background: linear-gradient(90deg, #182764, #24377c);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 25px;
+  gap: 18px;
+}
+[data-theme="dark"] .top {
+  background: linear-gradient(90deg, #0f172a, #1e293b);
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-size: 20px; font-weight: 900; }
+.logo span { color: #6da8ff; }
+.top-sub { font-size: 13px; opacity: .75; border-left: 1px solid #ffffff44; padding-left: 18px; }
+.sync { margin-left: auto; font-size: 12px; opacity: .85; }
+.sync.ok { color: #9ff0c8; }
+.sync.err { color: #ffd0d5; }
+
+.theme-btn {
+  background: #ffffff22;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.theme-btn:hover { background: #ffffff33; }
+
+.user-box { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-left: 6px; }
+.user-box span { opacity: .85; }
+.user-box button { background: #ffffff22; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
+.user-box button:hover { background: #ffffff33; }
+
+.wrap { max-width: 1240px; margin: 22px auto; padding: 0 16px; }
+
+/* BARRA DE GAMIFICAÇÃO */
+.gamification-bar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 14px 20px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.rank-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 280px;
+}
+.rank-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--btn-soft-bg);
+  color: var(--btn-soft-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.rank-info { flex: 1; }
+.rank-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.rank-title { font-weight: 900; font-size: 14px; }
+.rank-lvl {
+  background: var(--primary);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-right: 6px;
+}
+.xp-text { font-size: 11px; color: var(--muted); font-weight: 700; }
+.xp-bar {
+  height: 8px;
+  background: var(--donut-empty);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.xp-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #00c6ff);
+  width: 0%;
+  transition: width 0.4s ease;
+}
+.g-pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.g-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 11px;
+  background: var(--card-alt);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 800;
+}
+.g-pill small {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.g-pill .g-icon { font-size: 18px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 18px; overflow: auto; }
+.tab {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 800;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.grid { display: grid; grid-template-columns: 330px 1fr; gap: 18px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+}
+.head { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+.head h2 { margin: 0; font-size: 17px; }
+.head p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.body { padding: 18px 20px; }
+
+.current {
+  background: linear-gradient(145deg, #14255f, #243d91);
+  color: #fff;
+  border-radius: 15px;
+  padding: 20px;
+}
+[data-theme="dark"] .current {
+  background: linear-gradient(145deg, #172554, #1e3a8a);
+  border: 1px solid #2e4a9e;
+}
+.current small { opacity: .7; }
+.current h1 { font-size: 20px; margin: 8px 0 2px; }
+.current .subject { font-size: 13px; opacity: .85; }
+.timer { font-size: 56px; font-weight: 900; text-align: center; letter-spacing: 1px; margin: 18px 0 5px; font-variant-numeric: tabular-nums; }
+.mode { text-align: center; font-size: 12px; opacity: .75; }
+.progress { height: 7px; background: #ffffff2b; border-radius: 99px; overflow: hidden; margin: 16px 0; }
+.progress i { display: block; height: 100%; background: #fff; width: 0; transition: width 0.25s linear; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.question-bar { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.question-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.question-card .q-label { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.question-card .q-total { font-size: 28px; font-weight: 900; color: var(--navy); text-align: right; }
+.question-card .q-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.question-card .q-actions input { width: 60px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 6px; font-size: 14px; text-align: center; }
+.question-card .q-actions .btn-add { border: 0; border-radius: 6px; padding: 6px 12px; background: var(--btn-soft-bg); color: var(--btn-soft-text); font-weight: 700; font-size: 14px; flex: 1 1 auto; }
+.question-card .q-actions .btn-reset { border: 0; border-radius: 6px; padding: 6px 10px; background: var(--btn-red-bg); color: var(--btn-red-text); font-weight: 700; font-size: 12px; }
+
+.settings-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ffffff22; }
+.settings-line label { font-size: 11px; opacity: .8; }
+.settings-line input { width: 62px; border: 0; border-radius: 7px; padding: 6px; text-align: center; font-weight: 800; color: #17306f; background: #fff; }
+
+.audio-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ffffff22;
+  font-size: 11px;
+  opacity: .9;
+}
+.audio-settings input[type=range] { width: 90px; cursor: pointer; }
+.test-sound-btn { background: #ffffff33; color: #fff; border: 0; border-radius: 5px; padding: 3px 8px; font-size: 10px; font-weight: 700; }
+.test-sound-btn:hover { background: #ffffff55; }
+
+.break-note { font-size: 11px; opacity: .75; margin-top: 7px; }
+
+.btn { border: 0; border-radius: 9px; padding: 10px 13px; font-weight: 800; }
+.btn-white { background: #fff; color: #17306f; }
+.btn-white:hover { background: #f0f4ff; }
+.btn-blue { background: var(--primary); color: #fff; }
+.btn-soft { background: var(--btn-soft-bg); color: var(--btn-soft-text); }
+.btn-red { background: var(--btn-red-bg); color: var(--btn-red-text); }
+
+.full { grid-column: 1 / -1; }
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.stat { border: 1px solid var(--border); background: var(--card-alt); border-radius: 11px; padding: 13px; }
+.stat b { display: block; font-size: 19px; }
+.stat span { font-size: 11px; color: var(--muted); }
+.stat .goal-input {
+  width: 70px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--navy);
+  background: var(--input-bg);
+  text-align: center;
+}
+
+/* MISSÕES DO DIA */
+.quest-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.quest-item {
+  border: 1px solid var(--border);
+  background: var(--card-alt);
+  border-radius: 12px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quest-item.done {
+  border-color: var(--green);
+  background: rgba(24, 168, 117, 0.08);
+}
+.quest-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.quest-title { font-size: 13px; font-weight: 800; }
+.quest-xp {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--btn-soft-bg);
+  color: var(--btn-soft-text);
+  white-space: nowrap;
+}
+.quest-item.done .quest-xp {
+  background: var(--green);
+  color: #fff;
+}
+.quest-prog-bar {
+  height: 6px;
+  background: var(--donut-empty);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.quest-prog-bar i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.quest-item.done .quest-prog-bar i { background: var(--green); }
+.quest-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+/* CONQUISTAS / MEDALHAS */
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+.badge-card {
+  border: 1px solid var(--border);
+  background: var(--card-alt);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  opacity: 0.55;
+  filter: grayscale(0.85);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.badge-card.unlocked {
+  opacity: 1;
+  filter: none;
+  background: var(--card-active);
+  border-color: var(--border-active);
+}
+.badge-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.badge-info strong { display: block; font-size: 14px; margin-bottom: 3px; }
+.badge-info p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+.badge-reward {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--btn-soft-text);
+  background: var(--btn-soft-bg);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+/* TOAST DE NOTIFICAÇÕES */
+#toastContainer {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2000;
+  pointer-events: none;
+}
+.toast {
+  background: var(--card);
+  color: var(--text);
+  border: 2px solid var(--primary);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  border-radius: 14px;
+  padding: 14px 18px;
+  min-width: 260px;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideInToast 0.35s ease forwards;
+}
+.toast-icon { font-size: 26px; }
+.toast-body strong { display: block; font-size: 13px; }
+.toast-body span { font-size: 12px; color: var(--muted); }
+@keyframes slideInToast {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cycle-list { display: flex; flex-direction: column; gap: 10px; }
+.cycle { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: var(--card); }
+.cycle.active { border-color: var(--border-active); background: var(--card-active); }
+.cycle-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cycle strong { font-size: 14px; }
+.cycle .cycle-time { font-size: 12px; font-weight: 800; color: var(--btn-soft-text); background: var(--btn-soft-bg); border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.cycle small { display: block; color: var(--muted); margin-top: 4px; }
+.cycle-actions { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
+.cycle-open, .cycle-delete { width: 100%; border: 0; border-radius: 9px; padding: 9px; font-weight: 800; }
+.cycle-rename { border: 0; border-radius: 10px; padding: 10px 14px; background: var(--btn-warn-bg); color: var(--btn-warn-text); font-weight: 900; cursor: pointer; }
+.cycle-open { background: var(--btn-soft-bg); color: var(--btn-soft-text); }
+.cycle-delete { background: var(--btn-red-bg); color: var(--btn-red-text); }
+
+.chart { display: flex; gap: 22px; align-items: center; }
+.donut { width: 190px; height: 190px; border-radius: 50%; position: relative; flex: none; background: var(--donut-empty); }
+.donut:after { content: ""; position: absolute; inset: 42px; background: var(--card); border-radius: 50%; }
+.center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 2; }
+.center b { font-size: 22px; }
+.center span { font-size: 10px; color: var(--muted); }
+.legend { display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.leg { display: flex; gap: 8px; align-items: center; font-size: 12px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.leg em { margin-left: auto; font-style: normal; color: var(--muted); }
+
+.queue { display: flex; flex-direction: column; gap: 7px; }
+.q {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  color: var(--text);
+  cursor: grab;
+}
+.q.now { border-color: var(--border-active); background: var(--card-active); }
+.q.drag-over { border-color: var(--primary); border-style: dashed; }
+.q strong { font-size: 13px; }
+.q .mini { font-size: 11px; color: var(--muted); }
+.drag-handle { color: #8a98ad; font-size: 17px; cursor: grab; user-select: none; }
+.queue-help { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.queue-duration { display: flex; align-items: center; gap: 5px; margin-top: 5px; color: var(--muted); font-size: 10px; }
+.queue-duration input { width: 62px; border: 1px solid var(--border); border-radius: 7px; padding: 5px 6px; font-size: 11px; font-weight: 700; background: var(--input-bg); }
+
+.editor-row { display: grid; grid-template-columns: 1fr 100px 100px 34px; gap: 8px; margin-bottom: 8px; }
+.editor-row input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px; }
+.x { border: 0; background: var(--btn-red-bg); color: var(--btn-red-text); border-radius: 8px; font-weight: 800; }
+.add { display: grid; grid-template-columns: 1fr 90px auto; gap: 8px; margin-top: 10px; }
+.add input { border: 1px solid var(--border); border-radius: 8px; padding: 9px; }
+
+.history { width: 100%; border-collapse: collapse; font-size: 12px; }
+.history th, .history td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+.history th { color: var(--muted); font-size: 11px; }
+.notice { padding: 10px 12px; background: var(--notice-bg); border: 1px solid var(--notice-border); border-radius: 9px; color: var(--notice-text); font-size: 11px; line-height: 1.5; }
+.empty { padding: 18px; text-align: center; color: var(--muted); font-size: 13px; }
+.add-cycle-btn { background: var(--primary); color: #fff; border: 0; border-radius: 9px; padding: 12px 18px; font-weight: 800; width: 100%; margin-top: 10px; }
+
+#loginScreen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(145deg, #14255f, #243d91);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+[data-theme="dark"] #loginScreen {
+  background: linear-gradient(145deg, #090d16, #131f3d);
+}
+#loginScreen .login-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px #00000044;
+  position: relative;
+}
+#loginScreen .login-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--btn-soft-bg);
+  color: var(--btn-soft-text);
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+#loginScreen h1 { margin: 0 0 6px; font-size: 24px; color: var(--navy); }
+#loginScreen h1 span { color: var(--primary); }
+#loginScreen p { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+#loginScreen input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; font-size: 14px; outline: none; }
+#loginScreen input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px #1769ff22; }
+#loginScreen .btn-login { width: 100%; border: 0; border-radius: 10px; padding: 13px; background: var(--primary); color: #fff; font-weight: 800; font-size: 14px; margin-top: 6px; }
+#loginScreen .btn-signup { width: 100%; border: 0; border-radius: 10px; padding: 13px; background: var(--btn-soft-bg); color: var(--btn-soft-text); font-weight: 800; font-size: 14px; margin-top: 8px; }
+#loginScreen .login-error { color: var(--red); font-size: 12px; margin-top: 10px; min-height: 16px; text-align: center; }
+#loginScreen .login-info { color: var(--muted); font-size: 11px; margin-top: 14px; text-align: center; line-height: 1.5; }
+
+#loadingScreen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(145deg, #14255f, #243d91);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  z-index: 1001;
+}
+[data-theme="dark"] #loadingScreen {
+  background: linear-gradient(145deg, #090d16, #131f3d);
+}
+
+@media(max-width:900px) {
+  .grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .quest-list { grid-template-columns: 1fr; }
+  .chart { flex-direction: column; align-items: flex-start; }
+}
+@media(max-width:560px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .editor-row { grid-template-columns: 1fr 80px 34px; }
+  .editor-row .status-col { display: none; }
+  .add { grid-template-columns: 1fr 80px; }
+  .add button { grid-column: 1 / -1; }
+  .top-sub { display: none; }
+  .user-box span { display: none; }
+  .theme-btn span { display: none; }
+  .g-pills { width: 100%; justify-content: space-between; }
+  .g-pill { flex: 1; justify-content: center; padding: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div id="toastContainer"></div>
+
+<div id="loginScreen" style="display:none">
+  <div class="login-card">
+    <button class="login-theme-toggle" onclick="toggleTheme()" id="loginThemeBtn" title="Alternar tema">🌙</button>
+    <h1>CICLO<span>PRO</span></h1>
+    <p>Faça login para acessar seus dados com segurança.</p>
+    <input id="loginEmail" type="email" placeholder="Seu email" autocomplete="username">
+    <input id="loginPassword" type="password" placeholder="Sua senha" autocomplete="current-password">
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <button class="btn-signup" onclick="doSignup()">Criar conta</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-info">Seus dados ficam vinculados à sua conta e protegidos por RLS.</div>
+  </div>
+</div>
+
+<div id="loadingScreen">☁ Carregando...</div>
+
+<header class="top" id="appHeader" style="display:none">
+  <div class="logo">CICLO<span>PRO</span></div>
+  <div class="top-sub">Painel pessoal de estudos</div>
+  <div class="sync" id="syncStatus">☁ Conectando...</div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Alternar modo claro/escuro">
+    <i id="themeIcon" style="font-style:normal">🌙</i>
+    <span id="themeLabel">Escuro</span>
+  </button>
+  <div class="user-box">
+    <span id="userEmail">—</span>
+    <button onclick="doLogout()">Sair</button>
+  </div>
+</header>
+
+<main class="wrap" id="appMain" style="display:none">
+
+<!-- BARRA DE GAMIFICAÇÃO -->
+<div class="gamification-bar">
+  <div class="rank-box">
+    <div class="rank-icon" id="rankIcon">🌱</div>
+    <div class="rank-info">
+      <div class="rank-header">
+        <div>
+          <span class="rank-lvl" id="userLevel">Nível 1</span>
+          <span class="rank-title" id="userRank">Iniciante</span>
+        </div>
+        <span class="xp-text" id="userXpText">0 / 500 XP</span>
+      </div>
+      <div class="xp-bar"><i id="userXpBar"></i></div>
+    </div>
+  </div>
+  <div class="g-pills">
+    <div class="g-pill" title="Dias seguidos estudando">
+      <span class="g-icon">🔥</span>
+      <div>
+        <span id="streakCount">0 dias</span>
+        <small>Ofensiva</small>
+      </div>
+    </div>
+    <div class="g-pill" title="Protege sua ofensiva se você falhar 1 dia (ganhe +1 ao bater a meta semanal)">
+      <span class="g-icon">❄️</span>
+      <div>
+        <span id="freezeCount">1</span>
+        <small>Bloqueios</small>
+      </div>
+    </div>
+    <div class="g-pill" style="cursor:pointer" onclick="document.querySelector('[data-page=achievements]').click()" title="Ver medalhas desbloqueadas">
+      <span class="g-icon">🏆</span>
+      <div>
+        <span id="badgeCount">0/10</span>
+        <small>Conquistas</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" data-page="dashboard">📊 Semana</button>
+  <button class="tab" data-page="achievements">🏆 Conquistas</button>
+  <button class="tab" data-page="cycles">🔄 Ciclos</button>
+  <button class="tab" data-page="history">📈 Histórico</button>
+</nav>
+
+<div class="question-bar" id="questionBar"></div>
+
+<section id="dashboard" class="page">
+<div class="grid">
+<aside>
+  <div class="current">
+    <small>AGORA • <span id="activeCycleLabel">—</span></small>
+    <h1 id="currentSubject">—</h1>
+    <div class="subject" id="currentDetail">—</div>
+    <div class="timer" id="timer">25:00</div>
+    <div class="mode" id="timerMode">Pronto para estudar</div>
+    <div class="progress"><i id="timerProgress"></i></div>
+    <div class="actions">
+      <button class="btn btn-white" id="startBtn" onclick="toggleTimer()">▶ Iniciar</button>
+      <button class="btn btn-white" onclick="skipBlock()">⏭ Pular</button>
+      <button class="btn btn-white" onclick="resetTimer()">↺ Reiniciar</button>
+      <button class="btn btn-white" onclick="finishBlock()">✓ Concluir</button>
+      <button class="btn btn-white full" onclick="startBreak()">☕ Iniciar descanso</button>
+    </div>
+    <div class="settings-line">
+      <label for="breakMinutes">Descanso após o bloco:</label>
+      <input id="breakMinutes" type="number" min="1" max="60" step="1" value="5" onchange="setBreakMinutes(this.value)">
+      <span>min</span>
+    </div>
+    <div class="audio-settings">
+      <span>🔊 Alerta sonoro:</span>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <input type="range" id="volumeRange" min="0" max="100" step="1" value="50" onchange="setVolume(this.value)" title="Volume do alarme">
+        <button class="test-sound-btn" onclick="playChime()">Testar</button>
+      </div>
+    </div>
+    <div class="break-note">Use "Iniciar descanso" para começar o intervalo manualmente.</div>
+  </div>
+
+  <div class="card" style="margin-top:15px">
+    <div class="head"><h2>Ciclos</h2><p>Abra ou exclua cada ciclo.</p></div>
+    <div class="body">
+      <div class="cycle-list" id="cycleQuick"></div>
+      <button class="add-cycle-btn" onclick="document.querySelector('[data-page=cycles]').click();">+ Adicionar Ciclo</button>
+    </div>
+  </div>
+</aside>
+
+<div>
+  <div class="card">
+    <div class="head"><h2>Painel da semana</h2><p>Meta mínima: <span id="goalDisplay">24h</span> por semana.</p></div>
+    <div class="body">
+      <div class="stat-grid">
+        <div class="stat"><b id="weekTotal">0m</b><span>Estudadas (semana)</span></div>
+        <div class="stat"><b id="todayTotal">0m</b><span>Estudadas hoje</span></div>
+        <div class="stat">
+          <b><input type="number" id="goalInput" class="goal-input" min="0" max="168" step="1" value="24" onchange="updateGoal(this.value)"><span style="font-size:16px">h</span></b>
+          <span>Meta semanal</span>
+        </div>
+        <div class="stat"><b id="weekRemaining">24h</b><span>Faltam</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MISSÕES DO DIA -->
+  <div class="card" style="margin-top:15px">
+    <div class="head">
+      <h2>🎯 Missões do Dia</h2>
+      <p>Complete os desafios diários para ganhar bônus de XP.</p>
+    </div>
+    <div class="body">
+      <div class="quest-list" id="questList"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:15px">
+    <div class="head"><h2>Distribuição da semana</h2><p>Tempo efetivamente estudado por área.</p></div>
+    <div class="body">
+      <div class="chart">
+        <div class="donut" id="donut"><div class="center"><b id="donutTotal">0m</b><span>estudados</span></div></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:15px">
+    <div class="head"><h2>Próximos blocos</h2><p>Continua exatamente de onde você parou.</p></div>
+    <div class="body"><div class="queue-help">⠿ Arraste uma matéria para cima ou para baixo para reorganizar o ciclo.</div><div class="queue" id="queue"></div></div>
+  </div>
+</div>
+
+<div class="card full">
+  <div class="head"><h2>Configuração rápida do ciclo ativo</h2><p>Altere disciplinas e duração dos blocos.</p></div>
+  <div class="body">
+    <div id="editor"></div>
+    <div class="add">
+      <input id="newSubject" placeholder="Nova disciplina">
+      <input id="newMinutes" type="number" min="5" step="5" value="25">
+      <button class="btn btn-blue" onclick="addSubject()">+ Adicionar</button>
+    </div>
+    <div class="notice" style="margin-top:12px">Atualizações são salvas automaticamente na nuvem.</div>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- ABA DE CONQUISTAS -->
+<section id="achievements" class="page" style="display:none">
+  <div class="card">
+    <div class="head">
+      <h2>🏆 Galeria de Medalhas e Conquistas</h2>
+      <p>Desbloqueie insígnias automaticamente conforme avança nos estudos (+10 XP por minuto estudado e +5 XP por questão).</p>
+    </div>
+    <div class="body">
+      <div class="badge-grid" id="badgeGrid"></div>
+    </div>
+  </div>
+</section>
+
+<section id="cycles" class="page" style="display:none">
+  <div class="card">
+    <div class="head"><h2>Gerenciar ciclos</h2><p>Abra, renomeie ou exclua cada ciclo.</p></div>
+    <div class="body">
+      <div id="cycleManager"></div>
+      <div class="add" style="margin-top:14px; grid-template-columns: 1fr auto;">
+        <input id="newCycleName" placeholder="Nome do novo ciclo">
+        <button class="btn btn-blue" onclick="addCycle()">+ Criar ciclo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="history" class="page" style="display:none">
+  <div class="card">
+    <div class="head"><h2>Histórico</h2><p>Sessões de estudo registradas.</p></div>
+    <div class="body">
+      <table class="history">
+        <thead><tr><th>Data</th><th>Ciclo</th><th>Disciplina</th><th>Tempo</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+      <button class="btn btn-red" style="margin-top:14px" onclick="clearHistory()">Limpar histórico</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+/* =========================================================
+   SUPABASE
+========================================================= */
+const SUPABASE_URL = "https://uflblxglvdkhnvlmumbd.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uZHKf36rcsEEcMu7P34B8A_wwFlBjr-";
+const TABLE = "study_data";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* =========================================================
+   CONSTANTES & DEFINIÇÕES DE GAMIFICAÇÃO
+========================================================= */
+const MAX_BACKGROUND_DELTA_SECONDS = 14400;
+const PERIODIC_SAVE_MS = 30000;
+const XP_PER_LEVEL = 500;
+
+const RANKS = [
+  { minLv: 1,  title: "Iniciante",    icon: "🌱" },
+  { minLv: 3,  title: "Aprendiz",     icon: "📘" },
+  { minLv: 6,  title: "Consistente",  icon: "⚡" },
+  { minLv: 10, title: "Estrategista", icon: "🧠" },
+  { minLv: 15, title: "Veterano",     icon: "🛡️" },
+  { minLv: 22, title: "Elite",        icon: "🔥" },
+  { minLv: 30, title: "Aprovado",     icon: "👑" }
+];
+
+const BADGES = [
+  { id: "first_step",  icon: "🎯", name: "Primeiro Passo",      desc: "Concluir a 1ª sessão de estudos.",             xp: 100 },
+  { id: "daily_2h",    icon: "⚡", name: "Foco Total",          desc: "Estudar 2 horas ou mais em um único dia.",    xp: 200 },
+  { id: "daily_4h",    icon: "🏃", name: "Maratonista",         desc: "Estudar 4 horas ou mais em um único dia.",    xp: 350 },
+  { id: "streak_3",    icon: "🔥", name: "Chama Acesa",         desc: "Alcançar 3 dias seguidos de ofensiva.",       xp: 150 },
+  { id: "streak_7",    icon: "🛡️", name: "Imparável",           desc: "Alcançar 7 dias seguidos de ofensiva.",       xp: 300 },
+  { id: "streak_30",   icon: "👑", name: "Lenda da Constância", desc: "Alcançar 30 dias seguidos de ofensiva.",      xp: 1000 },
+  { id: "q_100",       icon: "✏️", name: "Caçador de Questões", desc: "Resolver 100 questões no total.",             xp: 200 },
+  { id: "q_500",       icon: "🎯", name: "Sniper de Questões",  desc: "Resolver 500 questões no total.",             xp: 400 },
+  { id: "q_1000",      icon: "🚀", name: "Máquina de Provas",   desc: "Resolver 1.000 questões no total.",           xp: 800 },
+  { id: "weekly_goal", icon: "🏆", name: "Meta Cumprida",       desc: "Bater 100% da meta semanal (+1 Bloqueio ❄️).", xp: 500 }
+];
+
+/* =========================================================
+   DADOS INICIAIS
+========================================================= */
+const DEFAULT_DATA = {
+  weeklyGoal: 24,
+  settings: { breakMinutes: 5, theme: "light", volume: 50 },
+  questions: {},
+  gamification: {
+    bonusXp: 0,
+    freezes: 1,
+    usedFreezesDates: [],
+    rewardedWeeks: [],
+    unlockedBadges: [],
+    lastLevel: 1,
+    daily: {
+      date: "",
+      questionsToday: 0,
+      claimedQuests: []
+    }
+  },
+  timer: {
+    mode: "study",
+    running: false,
+    remaining: 1500,
+    accumulated: 0,
+    savedSeconds: 0
+  },
+  cycles: {
+    acs: { pos:0, name:"ACS IBGE", items:[
+      {min:25,name:"Administração / Situações Gerenciais"},
+      {min:25,name:"Língua Portuguesa"},
+      {min:25,name:"Conhecimentos Técnicos"},
+      {min:25,name:"Raciocínio Lógico Quantitativo"}
+    ]},
+    sec: { pos:0, name:"Segurança da Informação", items:[
+      {min:25,name:"Redes"},{min:25,name:"Sistemas"},{min:25,name:"Segurança"},{min:25,name:"Criptografia"}
+    ]},
+    core: { pos:0, name:"Núcleo Duro", items:[
+      {min:25,name:"Português"},{min:25,name:"Raciocínio Lógico / Matemática"},
+      {min:25,name:"Direito Constitucional"},{min:25,name:"Direito Administrativo"}
+    ]},
+    english: { pos:0, name:"Inglês", items:[
+      {min:25,name:"Vocabulário"},{min:25,name:"Leitura"},{min:25,name:"Listening"},{min:25,name:"Gramática"}
+    ]}
+  },
+  history: [],
+  activeCycle: "acs"
+};
+
+let data = structuredClone(DEFAULT_DATA);
+let saveTimer = null;
+let currentUser = null;
+let isReady = false;
+let suppressToasts = false;
+let lastTickTime = Date.now();
+let lastPeriodicSave = Date.now();
+let audioCtx = null;
+
+const CYCLE_COLORS = ["#1769ff","#18a875","#7557d9","#f39a23","#e74c3c","#2ecc71","#3498db","#e67e22","#1abc9c","#9b59b6","#34495e","#16a085"];
+function getCycleColor(i){ return CYCLE_COLORS[i % CYCLE_COLORS.length]; }
+
+/* =========================================================
+   SINAL SONORO (WEB AUDIO API)
+========================================================= */
+function playChime() {
+  const vol = Number(data.settings.volume) || 0;
+  if (vol <= 0) return;
+
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+
+    const now = audioCtx.currentTime;
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime((vol / 100) * 0.25, now);
+    masterGain.connect(audioCtx.destination);
+
+    // Melodia simpática de conclusão (acorde ascendente suave)
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    notes.forEach((freq, idx) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + (idx * 0.08));
+
+      gain.gain.setValueAtTime(0, now + (idx * 0.08));
+      gain.gain.linearRampToValueAtTime(0.3, now + (idx * 0.08) + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.08) + 0.45);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+
+      osc.start(now + (idx * 0.08));
+      osc.stop(now + (idx * 0.08) + 0.5);
+    });
+  } catch(e) {}
+}
+
+function setVolume(v) {
+  const n = Math.min(100, Math.max(0, Number(v) || 0));
+  data.settings.volume = n;
+  document.getElementById("volumeRange").value = n;
+  queueSave();
+}
+
+/* =========================================================
+   NOTIFICAÇÕES FLUTUANTES (TOASTS)
+========================================================= */
+function showToast(icon, title, subtitle) {
+  if (suppressToasts) return;
+  const container = document.getElementById("toastContainer");
+  if (!container) return;
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-body">
+      <strong>${esc(title)}</strong>
+      <span>${esc(subtitle)}</span>
+    </div>
+  `;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transition = "opacity 0.3s ease";
+    setTimeout(() => el.remove(), 300);
+  }, 4200);
+}
+
+/* =========================================================
+   TEMA (MODO CLARO / ESCURO)
+========================================================= */
+function applyTheme(theme) {
+  const validTheme = theme === "dark" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", validTheme);
+  try { localStorage.setItem("ciclopro_theme", validTheme); } catch(e) {}
+
+  const icon = document.getElementById("themeIcon");
+  const label = document.getElementById("themeLabel");
+  const loginBtn = document.getElementById("loginThemeBtn");
+
+  if (icon) icon.textContent = validTheme === "dark" ? "☀️" : "🌙";
+  if (label) label.textContent = validTheme === "dark" ? "Claro" : "Escuro";
+  if (loginBtn) loginBtn.textContent = validTheme === "dark" ? "☀️" : "🌙";
+
+  if (data && data.settings) {
+    data.settings.theme = validTheme;
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  const next = current === "dark" ? "light" : "dark";
+  applyTheme(next);
+  if (isReady) {
+    renderDashboard();
+    queueSave();
+  }
+}
+
+/* =========================================================
+   UTIL
+========================================================= */
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c])); }
+function escAttr(s){ return esc(s); }
+
+function fmtTime(seconds){
+  seconds = Math.max(0, Math.floor(seconds));
+  const totalMin = Math.floor(seconds / 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if(h > 0) return h+"h "+m+"m";
+  return m+"m";
+}
+
+function clock(seconds){
+  seconds = Math.max(0, Math.floor(seconds));
+  const totalMin = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return String(totalMin).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+
+function dateStrFromObj(d) {
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function today(){ return dateStrFromObj(new Date()); }
+function daysAgoDateStr(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return dateStrFromObj(d);
+}
+
+function getWeekNumber(d){
+  const date = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const dayNum = (date.getUTCDay()+6)%7;
+  date.setUTCDate(date.getUTCDate()-dayNum+3);
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(),0,4));
+  const week = 1+Math.round(((date-firstThursday)/86400000-3+((firstThursday.getUTCDay()+6)%7))/7);
+  return date.getUTCFullYear()+"-W"+String(week).padStart(2,"0");
+}
+function weekKey(d=new Date()){ return getWeekNumber(d); }
+
+function cache(){
+  try {
+    localStorage.setItem("ciclopro_cache_" + (currentUser?.id || "anon"), JSON.stringify(data));
+  } catch(e){}
+}
+function setSync(text,cls=""){
+  const el = document.getElementById("syncStatus");
+  if(el){ el.textContent = text; el.className = "sync " + cls; }
+}
+
+function cycle(){ return data.cycles[data.activeCycle]; }
+function currentItem(){
+  const c = cycle();
+  if(!c || !c.items || !c.items.length) return {name:"Sem disciplina",min:25};
+  c.pos = ((Number(c.pos)||0)%c.items.length+c.items.length)%c.items.length;
+  return c.items[c.pos];
+}
+
+function secondsOf(entry){
+  if(entry && typeof entry.sec === "number" && entry.sec >= 0) return entry.sec;
+  return (Number(entry.min)||0) * 60;
+}
+function totalSecondsForCycle(id){
+  return data.history
+    .filter(x => x.cycleId === id)
+    .reduce((s,x) => s + secondsOf(x), 0);
+}
+
+/* =========================================================
+   MOTOR DE GAMIFICAÇÃO
+========================================================= */
+function getStudiedDatesSet() {
+  const set = new Set();
+  data.history.forEach(entry => {
+    if (secondsOf(entry) >= 60 && entry.date) set.add(entry.date);
+  });
+  return set;
+}
+
+function computeStreakAndFreezes() {
+  const studied = getStudiedDatesSet();
+  const g = data.gamification;
+  const frozen = new Set(g.usedFreezesDates || []);
+
+  const yesterday = daysAgoDateStr(1);
+  const twoDaysAgo = daysAgoDateStr(2);
+
+  if (!studied.has(yesterday) && !frozen.has(yesterday) && studied.has(twoDaysAgo) && g.freezes > 0) {
+    g.freezes -= 1;
+    g.usedFreezesDates.push(yesterday);
+    frozen.add(yesterday);
+    showToast("❄️", "Bloqueio de Ofensiva Ativado!", "Sua sequência foi protegida ontem.");
+  }
+
+  let streak = 0;
+  let cursor = 0;
+  const todayStr = today();
+
+  if (!studied.has(todayStr)) {
+    cursor = 1;
+  }
+
+  while (cursor < 3650) {
+    const dStr = daysAgoDateStr(cursor);
+    if (studied.has(dStr)) {
+      streak++;
+      cursor++;
+    } else if (frozen.has(dStr)) {
+      cursor++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function getDailyQuestsStatus() {
+  const g = data.gamification;
+  const todayMin = Math.floor(todayHistory().reduce((a, x) => a + secondsOf(x), 0) / 60);
+  const todayBlocks = todayHistory().length;
+  const todayQ = g.daily.questionsToday || 0;
+
+  return [
+    {
+      id: "q_time",
+      title: "Estudar 50 min hoje",
+      current: Math.min(50, todayMin),
+      target: 50,
+      unit: "min",
+      xp: 150,
+      done: todayMin >= 50
+    },
+    {
+      id: "q_blocks",
+      title: "Concluir 3 sessões hoje",
+      current: Math.min(3, todayBlocks),
+      target: 3,
+      unit: "sessões",
+      xp: 150,
+      done: todayBlocks >= 3
+    },
+    {
+      id: "q_questions",
+      title: "Resolver 15 questões hoje",
+      current: Math.min(15, todayQ),
+      target: 15,
+      unit: "questões",
+      xp: 100,
+      done: todayQ >= 15
+    }
+  ];
+}
+
+function getTotalXp() {
+  const totalStudyMin = Math.floor(data.history.reduce((s, x) => s + secondsOf(x), 0) / 60);
+  const totalQuestions = Object.values(data.questions).reduce((s, v) => s + (Number(v) || 0), 0);
+  const bonus = Number(data.gamification.bonusXp) || 0;
+  return (totalStudyMin * 10) + (totalQuestions * 5) + bonus;
+}
+
+function getRankForLevel(lv) {
+  let current = RANKS[0];
+  for (const r of RANKS) {
+    if (lv >= r.minLv) current = r;
+  }
+  return current;
+}
+
+function evaluateGamification() {
+  const g = data.gamification;
+
+  const quests = getDailyQuestsStatus();
+  quests.forEach(q => {
+    if (q.done && !g.daily.claimedQuests.includes(q.id)) {
+      g.daily.claimedQuests.push(q.id);
+      g.bonusXp += q.xp;
+      showToast("🎯", "Missão do Dia Concluída!", `${q.title} (+${q.xp} XP)`);
+    }
+  });
+
+  const streak = computeStreakAndFreezes();
+  const totalSessions = data.history.length;
+  const totalQuestions = Object.values(data.questions).reduce((s, v) => s + (Number(v) || 0), 0);
+
+  const byDay = {};
+  data.history.forEach(x => {
+    byDay[x.date] = (byDay[x.date] || 0) + secondsOf(x);
+  });
+  const maxDaySeconds = Object.values(byDay).reduce((m, v) => Math.max(m, v), 0);
+
+  const curWeek = weekKey();
+  const secWeek = weekHistory().reduce((a, x) => a + secondsOf(x), 0);
+  const goalSec = (Number(data.weeklyGoal) || 24) * 3600;
+  const weekGoalHit = goalSec > 0 && secWeek >= goalSec;
+
+  if (weekGoalHit && !g.rewardedWeeks.includes(curWeek)) {
+    g.rewardedWeeks.push(curWeek);
+    g.freezes += 1;
+    showToast("❄️", "Meta Semanal Batida!", "Você ganhou +1 Bloqueio de Ofensiva!");
+  }
+
+  const conditions = {
+    first_step: totalSessions >= 1,
+    daily_2h: maxDaySeconds >= 2 * 3600,
+    daily_4h: maxDaySeconds >= 4 * 3600,
+    streak_3: streak >= 3,
+    streak_7: streak >= 7,
+    streak_30: streak >= 30,
+    q_100: totalQuestions >= 100,
+    q_500: totalQuestions >= 500,
+    q_1000: totalQuestions >= 1000,
+    weekly_goal: weekGoalHit || g.rewardedWeeks.length > 0
+  };
+
+  BADGES.forEach(b => {
+    if (conditions[b.id] && !g.unlockedBadges.includes(b.id)) {
+      g.unlockedBadges.push(b.id);
+      g.bonusXp += b.xp;
+      showToast("🏆", `Conquista: ${b.name}`, `${b.desc} (+${b.xp} XP)`);
+    }
+  });
+
+  const totalXp = getTotalXp();
+  const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
+  if (level > (g.lastLevel || 1)) {
+    const rank = getRankForLevel(level);
+    showToast("🎉", `Subiu para o Nível ${level}!`, `Patente atual: ${rank.icon} ${rank.title}`);
+    g.lastLevel = level;
+  } else if (!g.lastLevel) {
+    g.lastLevel = level;
+  }
+
+  return { streak, totalXp, level, quests };
+}
+
+/* =========================================================
+   LOGIN
+========================================================= */
+async function doLogin(){
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const errEl = document.getElementById("loginError");
+  errEl.textContent = "";
+  if(!email || !password){ errEl.textContent = "Preencha email e senha."; return; }
+
+  const { data:res, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ errEl.textContent = error.message; return; }
+  currentUser = res.user;
+  await bootAfterLogin();
+}
+
+async function doSignup(){
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const errEl = document.getElementById("loginError");
+  errEl.textContent = "";
+  if(!email || !password){ errEl.textContent = "Preencha email e senha."; return; }
+  if(password.length < 6){ errEl.textContent = "A senha precisa ter ao menos 6 caracteres."; return; }
+
+  const { data:res, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ errEl.textContent = error.message; return; }
+  if(res.user && !res.session){
+    errEl.textContent = "Conta criada! Verifique seu email ou desative a confirmação no Supabase.";
+    return;
+  }
+  currentUser = res.user;
+  await bootAfterLogin();
+}
+
+async function doLogout(){
+  if (data.timer && data.timer.running) {
+    pauseTimer();
+    await cloudSave();
+  }
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  location.reload();
+}
+
+/* =========================================================
+   BOOT / SYNC
+========================================================= */
+async function bootAfterLogin(){
+  document.getElementById("loadingScreen").style.display = "flex";
+  document.getElementById("loginScreen").style.display = "none";
+
+  suppressToasts = true;
+  try{
+    const cached = JSON.parse(localStorage.getItem("ciclopro_cache_"+currentUser.id) || "null");
+    if(cached){ data = cached; normalize(); }
+  }catch(e){}
+
+  await cloudLoad();
+
+  if (data.timer) {
+    data.timer.running = false;
+  }
+  if (data.settings && data.settings.theme) {
+    applyTheme(data.settings.theme);
+  }
+  if (data.settings && typeof data.settings.volume === "number") {
+    document.getElementById("volumeRange").value = data.settings.volume;
+  }
+
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("appHeader").style.display = "flex";
+  document.getElementById("appMain").style.display = "block";
+  document.getElementById("userEmail").textContent = currentUser.email || "—";
+
+  isReady = true;
+  lastTickTime = Date.now();
+  lastPeriodicSave = Date.now();
+  render();
+  suppressToasts = false;
+}
+
+async function cloudSave(){
+  if(!currentUser) return;
+  cache();
+  try{
+    const row = { user_id: currentUser.id, dados: data };
+    const { error } = await supabaseClient
+      .from(TABLE)
+      .upsert(row, { onConflict: "user_id" });
+    if(error) throw error;
+    setSync("☁ Salvo na nuvem","ok");
+  }catch(e){
+    console.error(e);
+    setSync("⚠ Erro ao salvar","err");
+  }
+}
+
+function queueSave(){
+  cache();
+  if(!isReady) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(cloudSave, 500);
+}
+
+async function cloudLoad(){
+  if(!currentUser) return;
+  setSync("☁ Carregando...");
+  try{
+    const { data: rows, error } = await supabaseClient
+      .from(TABLE)
+      .select("dados")
+      .eq("user_id", currentUser.id)
+      .limit(1);
+    if(error) throw error;
+
+    if(rows && rows[0] && rows[0].dados){
+      data = rows[0].dados;
+      normalize();
+      cache();
+    }else{
+      normalize();
+      await cloudSave();
+    }
+    setSync("☁ Sincronizado","ok");
+  }catch(e){
+    console.error(e);
+    setSync("⚠ Offline / cache local","err");
+  }
+}
+
+/* =========================================================
+   NORMALIZE
+========================================================= */
+function normalize(){
+  if(!data || typeof data!=="object") data = structuredClone(DEFAULT_DATA);
+  data.weeklyGoal = Math.max(0, Number(data.weeklyGoal)||24);
+  data.settings = data.settings && typeof data.settings==="object" ? data.settings : {};
+  data.settings.breakMinutes = Math.min(60, Math.max(1, Number(data.settings.breakMinutes)||5));
+  data.settings.volume = Math.min(100, Math.max(0, Number(data.settings.volume) ?? 50));
+
+  const currentLocalTheme = localStorage.getItem("ciclopro_theme");
+  data.settings.theme = data.settings.theme || currentLocalTheme || "light";
+
+  data.cycles = data.cycles && typeof data.cycles==="object" ? data.cycles : {};
+  if(!Object.keys(data.cycles).length) data.cycles = structuredClone(DEFAULT_DATA.cycles);
+  if(!data.activeCycle || !data.cycles[data.activeCycle]) data.activeCycle = Object.keys(data.cycles)[0];
+
+  Object.values(data.cycles).forEach(c=>{
+    c.name = c.name || "Ciclo";
+    c.items = Array.isArray(c.items) && c.items.length ? c.items : [{name:"Nova disciplina",min:25}];
+    c.pos = Math.max(0, Number(c.pos)||0) % c.items.length;
+    c.items.forEach(it => { it.name = it.name || "Disciplina"; it.min = Math.max(5, Number(it.min)||25); });
+  });
+
+  if(!data.questions || typeof data.questions !== "object") data.questions = {};
+  Object.keys(data.cycles).forEach(id => { if(!(id in data.questions)) data.questions[id]=0; });
+
+  data.history = Array.isArray(data.history) ? data.history : [];
+  data.history = data.history.filter(entry => {
+    const s = secondsOf(entry);
+    return s > 0 && s <= 180*60;
+  });
+  data.history = data.history.map(entry => {
+    if(!entry.week){ const d=new Date(entry.date+"T00:00:00Z"); entry.week = getWeekNumber(d); }
+    if(typeof entry.sec !== "number"){ entry.sec = (Number(entry.min)||0) * 60; }
+    if(typeof entry.min !== "number"){ entry.min = Math.floor(entry.sec / 60); }
+    return entry;
+  });
+
+  if (!data.gamification || typeof data.gamification !== "object") {
+    data.gamification = structuredClone(DEFAULT_DATA.gamification);
+  }
+  const g = data.gamification;
+  g.bonusXp = Math.max(0, Number(g.bonusXp) || 0);
+  g.freezes = typeof g.freezes === "number" ? Math.max(0, g.freezes) : 1;
+  g.usedFreezesDates = Array.isArray(g.usedFreezesDates) ? g.usedFreezesDates : [];
+  g.rewardedWeeks = Array.isArray(g.rewardedWeeks) ? g.rewardedWeeks : [];
+  g.unlockedBadges = Array.isArray(g.unlockedBadges) ? g.unlockedBadges : [];
+  if (!g.daily || typeof g.daily !== "object" || g.daily.date !== today()) {
+    g.daily = { date: today(), questionsToday: 0, claimedQuests: [] };
+  } else {
+    g.daily.questionsToday = Math.max(0, Number(g.daily.questionsToday) || 0);
+    g.daily.claimedQuests = Array.isArray(g.daily.claimedQuests) ? g.daily.claimedQuests : [];
+  }
+
+  data.timer = data.timer && typeof data.timer==="object" ? data.timer : {};
+  data.timer.mode = data.timer.mode==="break" ? "break" : "study";
+  data.timer.running = Boolean(data.timer.running);
+  data.timer.remaining = Math.max(0, Number(data.timer.remaining)||currentItem().min*60);
+  data.timer.accumulated = Math.max(0, Number(data.timer.accumulated)||0);
+  data.timer.savedSeconds = Math.max(0, Number(data.timer.savedSeconds)||0);
+  delete data.timer.startedAt;
+}
+
+/* =========================================================
+   TIMER & COMMIT DE ESTUDO (CORREÇÃO DE SOMA)
+========================================================= */
+function getBlockSeconds(){
+  if(data.timer.mode === "break"){
+    return data.settings.breakMinutes * 60;
+  }
+  return currentItem().min * 60;
+}
+function getElapsedSeconds(){ return Math.max(0, Math.floor(data.timer.accumulated)); }
+function getTimerRemaining(){ return Math.max(0, getBlockSeconds() - getElapsedSeconds()); }
+
+// Salva todo o tempo acumulado que ainda não foi gravado (com arredondamento por segundos reais estudados)
+function commitUnsavedStudyTime() {
+  if (data.timer.mode !== "study") return false;
+  const rawElapsed = getElapsedSeconds();
+  const alreadySaved = Number(data.timer.savedSeconds) || 0;
+  const deltaSeconds = rawElapsed - alreadySaved;
+
+  if (deltaSeconds >= 10) { // Salva a partir de 10 segundos estudados
+    const c = cycle(), it = currentItem();
+    const minutesToAdd = Number((deltaSeconds / 60).toFixed(2));
+    const secondsToAdd = Math.floor(deltaSeconds);
+
+    if (secondsToAdd >= 30) { // Se acumulou pelo menos meio minuto
+      data.history.push({
+        date: today(),
+        week: weekKey(),
+        cycleId: data.activeCycle,
+        cycle: c.name,
+        subject: it.name,
+        min: Math.max(1, Math.round(minutesToAdd)),
+        sec: secondsToAdd
+      });
+      data.timer.savedSeconds = alreadySaved + secondsToAdd;
+      return true;
+    }
+  }
+  return false;
+}
+
+function resetTimer(){
+  if(data.timer.running) data.timer.running = false;
+  commitUnsavedStudyTime();
+
+  const it = currentItem();
+  data.timer = { mode:"study", running:false, remaining: it.min*60, accumulated:0, savedSeconds:0 };
+  render(); queueSave();
+}
+
+function startTimer(){
+  if(data.timer.running) return;
+  data.timer.running = true;
+  lastTickTime = Date.now();
+  render(); queueSave();
+}
+
+function pauseTimer(){
+  if(!data.timer.running) return;
+  data.timer.running = false;
+  commitUnsavedStudyTime();
+  render(); queueSave();
+}
+
+function toggleTimer(){
+  if(data.timer.running) pauseTimer();
+  else startTimer();
+}
+
+function finishBlock(){
+  if(data.timer.mode !== "study") return;
+  if(data.timer.running) data.timer.running = false;
+
+  commitUnsavedStudyTime();
+  playChime();
+
+  const c = cycle();
+  c.pos = (c.pos + 1) % c.items.length;
+  const newIt = currentItem();
+  data.timer = { mode:"study", running:false, remaining: newIt.min*60, accumulated:0, savedSeconds:0 };
+  render(); queueSave();
+}
+
+function skipBlock(){
+  if(data.timer.running) data.timer.running = false;
+  if(data.timer.mode === "break"){
+    const it = currentItem();
+    data.timer = { mode:"study", running:false, remaining: it.min*60, accumulated:0, savedSeconds:0 };
+    render(); queueSave(); return;
+  }
+  finishBlock();
+}
+
+function startBreak(){
+  if(data.timer.mode === "break"){
+    if(!data.timer.running) startTimer();
+    return;
+  }
+  if(data.timer.running) data.timer.running = false;
+
+  commitUnsavedStudyTime();
+
+  data.timer = {
+    mode: "break",
+    running: true,
+    remaining: data.settings.breakMinutes * 60,
+    accumulated: 0,
+    savedSeconds: 0
+  };
+  lastTickTime = Date.now();
+  render(); queueSave();
+}
+
+function setBreakMinutes(v){
+  const n = Math.min(60, Math.max(1, Math.floor(Number(v)||5)));
+  data.settings.breakMinutes = n;
+  if(data.timer.mode==="break" && !data.timer.running) data.timer.remaining = n*60;
+  render(); queueSave();
+}
+
+/* =========================================================
+   TICK
+========================================================= */
+function tick(){
+  if(!isReady) return;
+
+  const now = Date.now();
+  const delta = (now - lastTickTime) / 1000;
+  lastTickTime = now;
+
+  if(data.timer.running && delta > 0 && delta <= MAX_BACKGROUND_DELTA_SECONDS){
+    data.timer.accumulated += delta;
+
+    if(data.timer.mode === "study" && data.timer.accumulated >= getBlockSeconds()){
+      data.timer.accumulated = getBlockSeconds();
+      commitUnsavedStudyTime();
+      playChime();
+
+      const c = cycle();
+      c.pos = (c.pos + 1) % c.items.length;
+      const newIt = currentItem();
+      data.timer = { mode:"study", running:false, remaining: newIt.min*60, accumulated:0, savedSeconds:0 };
+      render(); queueSave();
+      return;
+    }
+
+    if(data.timer.mode === "break" && data.timer.accumulated >= getBlockSeconds()){
+      playChime();
+      const it = currentItem();
+      data.timer = { mode:"study", running:false, remaining: it.min*60, accumulated:0, savedSeconds:0 };
+      render(); queueSave();
+      return;
+    }
+
+    if(now - lastPeriodicSave > PERIODIC_SAVE_MS){
+      lastPeriodicSave = now;
+      cache();
+      cloudSave();
+    }
+
+    renderCurrent();
+    renderDashboard();
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && isReady && data.timer && data.timer.running) {
+    tick();
+  }
+});
+
+/* =========================================================
+   RENDER
+========================================================= */
+function render(){
+  if(!isReady) return;
+  normalize();
+  applyTheme(data.settings.theme);
+  renderCurrent();
+  renderQuestions();
+  renderQuick();
+  renderDashboard();
+  renderGamification();
+  renderQueue();
+  renderEditor();
+  renderManager();
+  renderHistory();
+  cache();
+}
+
+function renderGamification() {
+  const { streak, totalXp, level, quests } = evaluateGamification();
+  const rank = getRankForLevel(level);
+  const xpInLevel = totalXp % XP_PER_LEVEL;
+  const xpPercent = Math.min(100, Math.round((xpInLevel / XP_PER_LEVEL) * 100));
+
+  document.getElementById("rankIcon").textContent = rank.icon;
+  document.getElementById("userLevel").textContent = "Nível " + level;
+  document.getElementById("userRank").textContent = rank.title;
+  document.getElementById("userXpText").textContent = `${xpInLevel} / ${XP_PER_LEVEL} XP (Total: ${totalXp} XP)`;
+  document.getElementById("userXpBar").style.width = xpPercent + "%";
+
+  document.getElementById("streakCount").textContent = streak + (streak === 1 ? " dia" : " dias");
+  document.getElementById("freezeCount").textContent = data.gamification.freezes;
+  document.getElementById("badgeCount").textContent = `${data.gamification.unlockedBadges.length}/${BADGES.length}`;
+
+  const questEl = document.getElementById("questList");
+  if (questEl) {
+    questEl.innerHTML = quests.map(q => {
+      const pct = Math.min(100, Math.round((q.current / q.target) * 100));
+      return `
+        <div class="quest-item ${q.done ? "done" : ""}">
+          <div class="quest-top">
+            <span class="quest-title">${q.done ? "✓ " : ""}${esc(q.title)}</span>
+            <span class="quest-xp">+${q.xp} XP</span>
+          </div>
+          <div class="quest-prog-bar"><i style="width:${pct}%"></i></div>
+          <div class="quest-meta">
+            <span>Progresso</span>
+            <strong>${q.current}/${q.target} ${q.unit}</strong>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  const badgeEl = document.getElementById("badgeGrid");
+  if (badgeEl) {
+    badgeEl.innerHTML = BADGES.map(b => {
+      const unlocked = data.gamification.unlockedBadges.includes(b.id);
+      return `
+        <div class="badge-card ${unlocked ? "unlocked" : ""}">
+          <div class="badge-icon">${b.icon}</div>
+          <div class="badge-info">
+            <strong>${esc(b.name)} ${unlocked ? "✓" : "🔒"}</strong>
+            <p>${esc(b.desc)}</p>
+            <span class="badge-reward">+${b.xp} XP</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+}
+
+function renderCurrent(){
+  const c = cycle(), it = currentItem(), total = c.items.length;
+  const remaining = getTimerRemaining();
+  document.getElementById("activeCycleLabel").textContent = c.name;
+  document.getElementById("currentSubject").textContent = it.name;
+  document.getElementById("currentDetail").textContent = "Bloco "+(c.pos+1)+"/"+total+" • "+it.min+" min";
+  document.getElementById("timer").textContent = clock(remaining);
+  document.title = clock(remaining)+" • "+(data.timer.mode==="break"?"Descanso":it.name)+" | CicloPro";
+
+  let modeText = "Pronto para estudar";
+  if(data.timer.mode==="study" && data.timer.running) modeText = "Estudando agora";
+  if(data.timer.mode==="study" && !data.timer.running && getElapsedSeconds() > 0) modeText = "Pausado";
+  if(data.timer.mode==="break" && data.timer.running) modeText = "Descansando agora";
+  if(data.timer.mode==="break" && !data.timer.running) modeText = "Descanso de "+data.settings.breakMinutes+" minutos";
+  document.getElementById("timerMode").textContent = modeText;
+
+  document.getElementById("startBtn").textContent = data.timer.running ? "⏸ Pausar" : (data.timer.mode==="break" ? "▶ Retomar descanso" : "▶ Iniciar");
+
+  const base = getBlockSeconds();
+  const percent = base > 0 ? Math.max(0, Math.min(100, (getElapsedSeconds()/base)*100)) : 0;
+  document.getElementById("breakMinutes").value = data.settings.breakMinutes;
+  document.getElementById("timerProgress").style.width = percent+"%";
+}
+
+function renderQuick(){
+  const el = document.getElementById("cycleQuick");
+  el.innerHTML = Object.entries(data.cycles).map(([id,c])=>{
+    const pos = c.pos%c.items.length+1;
+    const totalSec = totalSecondsForCycle(id);
+    const timeLabel = fmtTime(totalSec);
+    return `
+      <div class="cycle ${id===data.activeCycle?"active":""}">
+        <div class="cycle-header">
+          <strong>${esc(c.name)}</strong>
+          <span class="cycle-time" title="Total estudado neste ciclo">${timeLabel}</span>
+        </div>
+        <small>${c.items.length} blocos • posição ${pos}</small>
+        <div class="cycle-actions">
+          <button class="cycle-open" onclick="setCycle('${id}')">Abrir</button>
+          <button class="cycle-rename" onclick="renameCycle('${id}')">Renomear</button>
+          <button class="cycle-delete" onclick="deleteCycle('${id}')">Excluir</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderQuestions(){
+  const container = document.getElementById("questionBar");
+  let html = "";
+  Object.entries(data.cycles).forEach(([cycleId, cycle]) => {
+    const total = data.questions[cycleId] || 0;
+    const inputId = "q_cycle_" + cycleId;
+    html += `
+      <div class="question-card">
+        <div class="q-label">${esc(cycle.name)}</div>
+        <div class="q-total">${total}</div>
+        <div class="q-actions">
+          <input id="${inputId}" type="number" min="1" step="1" value="1">
+          <button class="btn-add" onclick="addQuestions('${cycleId}')">+ Adicionar</button>
+          <button class="btn-reset" onclick="resetQuestions('${cycleId}')">Zerar</button>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html || `<div class="empty" style="grid-column:1/-1">Nenhum ciclo cadastrado.</div>`;
+}
+
+function addQuestions(cycleId){
+  const input = document.getElementById("q_cycle_"+cycleId);
+  if(!input) return;
+  const amount = Math.max(0, Math.floor(Number(input.value)||0));
+  if(amount === 0) return;
+  data.questions[cycleId] = (data.questions[cycleId]||0) + amount;
+
+  if (!data.gamification.daily || data.gamification.daily.date !== today()) {
+    data.gamification.daily = { date: today(), questionsToday: 0, claimedQuests: [] };
+  }
+  data.gamification.daily.questionsToday += amount;
+
+  input.value = 1;
+  renderQuestions();
+  renderGamification();
+  queueSave();
+}
+
+function resetQuestions(cycleId){
+  const name = data.cycles[cycleId]?.name || cycleId;
+  if(!confirm(`Zerar o contador de questões do ciclo "${name}"?`)) return;
+  data.questions[cycleId] = 0;
+  renderQuestions();
+  renderGamification();
+  queueSave();
+}
+
+function updateGoal(v){
+  const val = Math.max(0, Math.floor(Number(v)||0));
+  data.weeklyGoal = val;
+  document.getElementById("goalInput").value = val;
+  document.getElementById("goalDisplay").textContent = val+"h";
+  renderDashboard();
+  renderGamification();
+  queueSave();
+}
+
+function weekHistory(){ return data.history.filter(x => x.week === weekKey()); }
+function todayHistory(){ return data.history.filter(x => x.date === today()); }
+
+function renderDashboard(){
+  const hWeek = weekHistory();
+  const secWeek = hWeek.reduce((a,x)=> a + secondsOf(x), 0);
+  const hToday = todayHistory();
+  const secToday = hToday.reduce((a,x)=> a + secondsOf(x), 0);
+  const goalSec = (Number(data.weeklyGoal)||24) * 3600;
+  const remainingSec = Math.max(0, goalSec - secWeek);
+
+  document.getElementById("weekTotal").textContent = fmtTime(secWeek);
+  document.getElementById("todayTotal").textContent = fmtTime(secToday);
+  document.getElementById("goalInput").value = data.weeklyGoal;
+  document.getElementById("goalDisplay").textContent = data.weeklyGoal+"h";
+  document.getElementById("weekRemaining").textContent = fmtTime(remainingSec);
+  document.getElementById("donutTotal").textContent = fmtTime(secWeek);
+
+  const cycleIds = Object.keys(data.cycles);
+  const cycleData = cycleIds.map(id => {
+    const name = data.cycles[id].name;
+    const sec = hWeek.filter(e => e.cycleId === id).reduce((s,e)=> s + secondsOf(e), 0);
+    return { id, name, sec };
+  });
+  cycleData.sort((a,b)=>b.sec - a.sec);
+
+  document.getElementById("legend").innerHTML = cycleData.map((item, index) => `
+    <div class="leg">
+      <i class="dot" style="background:${getCycleColor(index)}"></i>
+      ${esc(item.name)}
+      <em>${fmtTime(item.sec)}</em>
+    </div>
+  `).join("");
+
+  const donutEl = document.getElementById("donut");
+  if(secWeek === 0){
+    donutEl.style.background = "var(--donut-empty)";
+  } else {
+    let start = 0;
+    const stops = cycleData.map((item, index) => {
+      const percent = (item.sec / secWeek) * 100;
+      const end = start + percent;
+      const stop = `${getCycleColor(index)} ${start}% ${end}%`;
+      start = end;
+      return stop;
+    });
+    donutEl.style.background = `conic-gradient(${stops.join(", ")})`;
+  }
+}
+
+function renderQueue(){
+  const c = cycle(), n = c.items.length, arr = [];
+  for(let k=0;k<n;k++) arr.push({ it: c.items[k], i: k, now: k===c.pos });
+  document.getElementById("queue").innerHTML = arr.map(x=>`
+    <button class="q ${x.now?"now":""}"
+      draggable="true"
+      data-index="${x.i}"
+      ondragstart="queueDragStart(event,${x.i})"
+      ondragover="queueDragOver(event)"
+      ondragleave="queueDragLeave(event)"
+      ondrop="queueDrop(event,${x.i})"
+      ondragend="queueDragEnd(event)"
+      onclick="selectQueueBlock(${x.i})">
+      <div class="drag-handle">⠿</div>
+      <div style="text-align:left">
+        <strong>${esc(x.it.name)}</strong>
+        <div class="queue-duration">
+          <input type="number" min="5" step="5" value="${x.it.min}"
+            onclick="event.stopPropagation()"
+            onmousedown="event.stopPropagation()"
+            onchange="editQueueMin(${x.i},this.value); event.stopPropagation()">
+          <span>min</span>
+        </div>
+      </div>
+      <div class="mini">${x.now?"← agora":"▶ iniciar"}</div>
+    </button>
+  `).join("");
+}
+let draggedQueueIndex = null;
+function queueDragStart(e,i){ draggedQueueIndex=i; e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",String(i)); }
+function queueDragOver(e){ e.preventDefault(); e.currentTarget.classList.add("drag-over"); }
+function queueDragLeave(e){ e.currentTarget.classList.remove("drag-over"); }
+function queueDrop(e, target){
+  e.preventDefault(); e.stopPropagation();
+  const source = draggedQueueIndex!==null ? draggedQueueIndex : Number(e.dataTransfer.getData("text/plain"));
+  document.querySelectorAll(".q.drag-over").forEach(el=>el.classList.remove("drag-over"));
+  if(!Number.isInteger(source) || source<0 || source>=cycle().items.length || source===target) return;
+  const c = cycle();
+  const ref = c.items[c.pos];
+  const [moved] = c.items.splice(source,1);
+  c.items.splice(target,0,moved);
+  const newIdx = c.items.indexOf(ref);
+  c.pos = newIdx>=0 ? newIdx : 0;
+  render(); queueSave();
+}
+function queueDragEnd(){ draggedQueueIndex = null; document.querySelectorAll(".q.dragging,.q.drag-over").forEach(el=>el.classList.remove("dragging","drag-over")); }
+
+function selectQueueBlock(index){
+  const c = cycle();
+  if(index<0 || index>=c.items.length) return;
+  if(data.timer.running) data.timer.running = false;
+  commitUnsavedStudyTime();
+  c.pos = index;
+  const it = currentItem();
+  data.timer = { mode:"study", running:true, remaining: it.min*60, accumulated: 0, savedSeconds:0 };
+  lastTickTime = Date.now();
+  render(); queueSave();
+}
+
+function editQueueMin(index, v){
+  const c = cycle();
+  if(index<0 || index>=c.items.length) return;
+  const n = Math.max(5, Number(v)||25);
+  c.items[index].min = n;
+  if(index===c.pos && !data.timer.running && data.timer.mode==="study" && data.timer.accumulated === 0){
+    data.timer.remaining = n*60;
+  }
+  render(); queueSave();
+}
+
+function renderEditor(){
+  const c = cycle();
+  document.getElementById("editor").innerHTML = c.items.map((it,i)=>`
+    <div class="editor-row">
+      <input value="${escAttr(it.name)}" onchange="editName(${i},this.value)">
+      <input type="number" min="5" step="5" value="${it.min}" onchange="editMin(${i},this.value)">
+      <input type="text" class="status-col" value="${i===c.pos?"ATUAL":""}" disabled>
+      <button class="x" onclick="removeItem(${i})" title="Remover disciplina">×</button>
+    </div>
+  `).join("");
+}
+
+function renderManager(){
+  document.getElementById("cycleManager").innerHTML = Object.entries(data.cycles).map(([id,c])=>{
+    const totalSec = totalSecondsForCycle(id);
+    const timeLabel = fmtTime(totalSec);
+    return `
+      <div class="cycle manager-row" style="margin-bottom:10px">
+        <div class="cycle-header">
+          <strong>${esc(c.name)}</strong>
+          <span class="cycle-time" title="Total estudado neste ciclo">${timeLabel}</span>
+        </div>
+        <small>${c.items.length} blocos • posição ${c.pos%c.items.length+1}</small>
+        <div class="cycle-actions">
+          <button class="cycle-open" onclick="setCycle('${id}')">Abrir</button>
+          <button class="cycle-rename" onclick="renameCycle('${id}')">Renomear</button>
+          <button class="cycle-delete" onclick="deleteCycle('${id}')">Excluir</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderHistory(){
+  const rows = [...data.history].reverse().slice(0,300);
+  document.getElementById("historyBody").innerHTML = rows.length
+    ? rows.map(x=>{
+        const min = Math.floor(secondsOf(x) / 60);
+        return `
+          <tr>
+            <td>${esc(x.date)}</td>
+            <td>${esc(x.cycle)}</td>
+            <td>${esc(x.subject)}</td>
+            <td>${min} min</td>
+          </tr>
+        `;
+      }).join("")
+    : `<tr><td colspan="4" class="empty">Nenhum estudo registrado ainda.</td></tr>`;
+}
+
+/* =========================================================
+   CICLOS / DISCIPLINAS
+========================================================= */
+function setCycle(id){
+  if(!data.cycles[id]) return;
+  if(data.timer.running) data.timer.running = false;
+  commitUnsavedStudyTime();
+  data.activeCycle = id;
+  resetTimer();
+}
+
+function addCycle(){
+  const name = document.getElementById("newCycleName").value.trim();
+  if(!name) return;
+  if(data.timer.running) data.timer.running = false;
+  commitUnsavedStudyTime();
+
+  const id = "c" + Date.now();
+  data.cycles[id] = { pos:0, name, items:[{name:"Nova disciplina",min:25}] };
+  data.questions[id] = 0;
+  data.activeCycle = id;
+  document.getElementById("newCycleName").value = "";
+  resetTimer();
+}
+
+function renameCycle(id){
+  const c = data.cycles[id];
+  if(!c) return;
+  const newName = prompt("Digite o novo nome do ciclo:", c.name);
+  if(newName===null) return;
+  const name = newName.trim();
+  if(!name){ alert("O nome do ciclo não pode ficar vazio."); return; }
+  c.name = name;
+  render(); queueSave();
+}
+
+function deleteCycle(id){
+  const ids = Object.keys(data.cycles);
+  if(ids.length<=1){ alert("Mantenha pelo menos um ciclo."); return; }
+  const c = data.cycles[id];
+  if(!c) return;
+  if(!confirm(`Tem certeza que deseja excluir o ciclo "${c.name}"?\n\nEssa ação não pode ser desfeita.`)) return;
+
+  if(data.activeCycle===id){
+    if(data.timer.running) data.timer.running = false;
+    commitUnsavedStudyTime();
+  }
+
+  delete data.cycles[id];
+  delete data.questions[id];
+  if(data.activeCycle===id){
+    data.activeCycle = Object.keys(data.cycles)[0];
+    const it = currentItem();
+    data.timer = { mode:"study", running:false, remaining: it.min*60, accumulated:0, savedSeconds:0 };
+  }
+  render(); queueSave();
+}
+
+function addSubject(){
+  const n = document.getElementById("newSubject").value.trim();
+  const m = Math.max(5, Number(document.getElementById("newMinutes").value)||25);
+  if(!n) return;
+  cycle().items.push({ name:n, min:m });
+  document.getElementById("newSubject").value = "";
+  render(); queueSave();
+}
+
+function removeItem(i){
+  const c = cycle();
+  if(c.items.length<=1){ alert("O ciclo precisa ter pelo menos uma disciplina."); return; }
+  if(!confirm("Excluir esta disciplina do ciclo?")) return;
+  if(i===c.pos){
+    if(data.timer.running) data.timer.running = false;
+    commitUnsavedStudyTime();
+  }
+  if(i<c.pos) c.pos--;
+  c.items.splice(i,1);
+  c.pos = ((c.pos%c.items.length)+c.items.length)%c.items.length;
+  if(i===c.pos) resetTimer();
+  else { render(); queueSave(); }
+}
+
+function editName(i,v){ cycle().items[i].name = v.trim() || "Disciplina"; render(); queueSave(); }
+function editMin(i,v){
+  cycle().items[i].min = Math.max(5, Number(v)||25);
+  if(i===cycle().pos && !data.timer.running && data.timer.accumulated === 0) resetTimer();
+  else { render(); queueSave(); }
+}
+
+function clearHistory(){
+  if(!data.history.length) return;
+  if(!confirm("Apagar todo o histórico de estudos?\n\nEssa ação não pode ser desfeita.")) return;
+  data.history = [];
+  render(); queueSave();
+}
+
+/* =========================================================
+   NAVEGAÇÃO
+========================================================= */
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(x=>x.style.display="none");
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.page).style.display = "block";
+  };
+});
+
+/* =========================================================
+   FECHAMENTO SEGURO
+========================================================= */
+function handlePageUnload(){
+  if(data.timer && data.timer.running){
+    data.timer.running = false;
+    commitUnsavedStudyTime();
+  }
+  cache();
+}
+window.addEventListener("pagehide", handlePageUnload);
+window.addEventListener("beforeunload", handlePageUnload);
+
+/* =========================================================
+   INIT
+========================================================= */
+(async function init(){
+  applyTheme(document.documentElement.getAttribute("data-theme"));
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(session && session.user){
+    currentUser = session.user;
+    await bootAfterLogin();
+  } else {
+    document.getElementById("loadingScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+  }
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    if(!session && currentUser){
+      currentUser = null;
+      location.reload();
+    }
+  });
+
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
